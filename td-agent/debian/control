@@ -13,7 +13,8 @@ Build-Depends:
   libedit2,
   libncurses5-dev,
   libyaml-dev,
-  libssl-dev
+  libssl-dev,
+  fluent-ruby
 Standards-Version: 4.3.0
 Homepage: https://www.fluentd.org/
 

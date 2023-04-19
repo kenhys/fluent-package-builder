@@ -33,6 +33,16 @@ RUN \
   quiet=$([ "${DEBUG}" = "yes" ] || echo "-qq") && \
   apt update ${quiet} && \
   apt install -y -V ${quiet} \
+    curl \
+    gnupg && \
+  # Enable fluent-ruby on external repository
+  curl -L -O https://mirrorcache.opensuse.org/repositories/home:/kenhys/bullseye/Release.key && \
+  gpg --no-default-keyring --keyring ./archive-obs-home-kenhys-keyring.gpg --import Release.key && \
+  mv ./archive-obs-home-kenhys-keyring.gpg /usr/share/keyrings/ && \
+  echo "deb [signed-by=/usr/share/keyrings/archive-obs-home-kenhys-keyring.gpg] https://download.opensuse.org/repositories/home:/kenhys/bullseye/ /" > /etc/apt/sources.list.d/fluent-ruby.list && \
+  echo "deb-src [signed-by=/usr/share/keyrings/archive-obs-home-kenhys-keyring.gpg] https://download.opensuse.org/repositories/home:/kenhys/bullseye/ /" >> /etc/apt/sources.list.d/fluent-ruby.list && \
+  apt update ${quiet} && \
+  apt install -y -V ${quiet} \
     build-essential \
     debhelper \
     devscripts \
@@ -50,8 +60,9 @@ RUN \
     tar \
     lsb-release \
     zlib1g-dev \
-    cmake && \
-  apt build-dep -y ruby && \
+    cmake \
+    fluent-ruby && \
+  apt build-dep -y fluent-ruby && \
   apt clean && \
   # raise IPv4 priority
   sed -i'' -e 's,#precedence ::ffff:0:0/96  100,precedence ::ffff:0:0/96  100,' /etc/gai.conf && \

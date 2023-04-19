@@ -97,7 +97,8 @@ def install_prefix
 end
 
 def gem_dir_suffix
-  "lib/ruby/gems/#{gem_dir_version}"
+  #"lib/ruby/gems/#{gem_dir_version}"
+  "lib/#{RbConfig::CONFIG['sitearch']}/ruby/gems/#{gem_dir_version}"
 end
 
 def gem_dir_version
@@ -185,7 +186,7 @@ class DownloadTask
     [
       @file_jemalloc_source,
       @file_openssl_source,
-      @file_ruby_source,
+      #@file_ruby_source,
       @file_ruby_installer_x64,
       @file_fluentd_archive,
       *@files_ruby_gems
@@ -204,7 +205,8 @@ class DownloadTask
       task :jemalloc => [@file_jemalloc_source]
 
       desc "Download Ruby source"
-      task :ruby => [@file_ruby_source, @file_ruby_installer_x64]
+      #task :ruby => [@file_ruby_source, @file_ruby_installer_x64]
+      task :ruby => [@file_ruby_installer_x64]
 
       desc "Clone fluentd repository and create a tarball"
       task :fluentd => @file_fluentd_archive
@@ -268,7 +270,8 @@ class DownloadTask
   end
 
   def define_ruby_files
-    define_ruby_source_file
+    # No need to bundle ruby source, use fluent-ruby instead
+    #define_ruby_source_file
     define_ruby_installer_file
   end
 
@@ -392,7 +395,13 @@ class BuildTask
 
       desc "Install Ruby"
       task :ruby => [:jemalloc, :openssl, :"download:ruby"] do
-        build_ruby_from_source
+        # No need to build ruby for linux distribution, use fluent-ruby instead
+        if macos? or windows?
+          build_ruby_from_source
+        else
+          # use OBS short while
+          #
+        end
       end
 
       desc "Install Ruby for Windows"
@@ -405,19 +414,48 @@ class BuildTask
 
       desc "Install ruby gems"
       task :ruby_gems => [:"download:ruby_gems", :fluentd] do
-        gem_install("bundler", BUNDLER_VERSION)
+        if macos? or windows?
+          gem_install("bundler", BUNDLER_VERSION)
 
-        gem_home = ENV["GEM_HOME"]
-        ENV["GEM_HOME"] = gem_staging_dir
-        ENV["INSTALL_GEM_FROM_LOCAL_REPO"] = "yes"
-        sh(bundle_command, "_#{BUNDLER_VERSION}_", "install")
-        # Ensure to install binstubs under /opt/td-agent/bin
-        sh(gem_command, "pristine", "--only-executables", "--all", "--bindir", staging_bindir)
-        ENV["GEM_HOME"] = gem_home
+          gem_home = ENV["GEM_HOME"]
+          ENV["GEM_HOME"] = gem_staging_dir
+          ENV["INSTALL_GEM_FROM_LOCAL_REPO"] = "yes"
+          sh(bundle_command, "_#{BUNDLER_VERSION}_", "install")
+          # Ensure to install binstubs under /opt/td-agent/bin
+          sh(gem_command, "pristine", "--only-executables", "--all", "--bindir", staging_bindir)
+          ENV["GEM_HOME"] = gem_home
 
-        # for fat gems which depend on nonexistent libraries
-        # mainly for nokogiri 1.11 or later on CentOS 6
-        rebuild_gems
+          # for fat gems which depend on nonexistent libraries
+          # mainly for nokogiri 1.11 or later on CentOS 6
+          rebuild_gems
+        else
+          ENV["INSTALL_GEM_FROM_LOCAL_REPO"] = "yes"
+          p Dir.pwd
+          # Prepare vendor/cache from td-agent/downloads
+          mkdir_p("vendor/cache")
+          cp_r(Dir.glob("downloads/*.gem"), "vendor/cache")
+          #sh(bundle_command, "config")
+          p gem_staging_dir
+          # Use fluent-ruby's bundled version
+          #sh(bundle_command, "_#{BUNDLER_VERSION}_", "install", "--local", "--gemfile", "Gemfile", "--path", gem_staging_dir)
+          sh(bundle_command, "_2.4.10_", "config", "set", "--local", "--path", gem_staging_dir)
+          # Do not install windows specific gem
+          rm_f("Gemfile.lock")
+          rm_f(Dir.glob("vendor/cache/certstrore_c*.gem"))
+          p File.exist?("Gemfile.lock")
+          p Dir.glob("vendor/cache/certstrore_c*.gem")
+          p "Show FLUENTD_LOCAL_GEM_REPO: #{FLUENTD_LOCAL_GEM_REPO}"
+          p Dir.glob("local_gem_repo/**/*")
+          Find.find("local_gem_repo") do |entry|
+            if entry.end_with?(".gem") and entry.split("/").last.start_with?("fluentd-")
+              FileUtils.cp(entry, "vendor/cache")
+            end
+          end
+          pp Dir.glob("vendor/cache/*.gem").sort
+          sh(bundle_command, "_2.4.10_", "install", "--local", "--gemfile", "Gemfile",
+             "--path", gem_staging_dir,
+             "--binstubs", staging_bindir)
+        end
       end
 
       desc "Install fluentd"
@@ -442,7 +480,8 @@ class BuildTask
       desc "Collect licenses of bundled softwares"
       task :licenses => [:gems] do
         install_jemalloc_license
-        install_ruby_license
+        # Use fluent-ruby
+        #install_ruby_license
         install_td_agent_license
         collect_gem_licenses
       end
@@ -878,7 +917,11 @@ class BuildTask
   end
 
   def bundle_command
-    File.join(staging_bindir, "bundle")
+    if macos? or windows?
+      File.join(staging_bindir, "bundle")
+    else
+      "#{install_prefix}/bin/bundle"
+    end
   end
 
   def gem_dir_version
@@ -1082,10 +1125,13 @@ class BuildTask
     remove_files("#{td_agent_staging_dir}/bin/pprof", true) # jemalloc 3
     remove_files("#{td_agent_staging_dir}/share/doc", true) # Contains only jemalloc.html
     remove_files("#{td_agent_staging_dir}/share/ri", true)
-    cd("#{gem_staging_dir}/cache") do
+    # No gem cache
+    cd("#{gem_staging_dir}/ruby/#{gem_dir_version}/cache") do
       remove_files("*.gem")
       remove_files("bundler", true)
     end
+    remove_files("#{td_agent_staging_dir}/bin/bundle", true)
+    remove_files("#{td_agent_staging_dir}/bin/rake", true)
     Dir.glob("#{gem_staging_dir}/gems/*").each do |gem_dir|
       cd(gem_dir) do
         rm_rf(["test", "tests", "spec"])
@@ -1248,8 +1294,15 @@ EOS
         # the archive and let the build container to download them.
         # Although we should remove dependency to gems, they are still required to
         # build debian/copyright. Probably it should be built in the build container.
-        cp_r(path, dest_dir) unless path.end_with?(".gem")
+        if macos? or windows?
+          cp_r(path, dest_dir) unless path.end_with?(".gem")
+        else
+          cp_r(path, dest_dir)
+        end
       end
+      # Fetch bundler gem using host's gem command
+      sh("gem", "fetch", "-v", BUNDLER_VERSION, "bundler")
+      mv("bundler-#{BUNDLER_VERSION}.gem", "#{PACKAGE_NAME}/downloads")
       cp_r("#{PACKAGE_NAME}/debian/copyright", "#{@archive_base_name}/#{PACKAGE_NAME}/debian/copyright")
       tar_options = []
       tar_options << "--force-local" if windows?
