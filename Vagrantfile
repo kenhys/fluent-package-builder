@@ -8,27 +8,27 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   vms = [
     {
       :id => "debian-bullseye",
-      :box => "bento/debian-11",
+      :box => "debian/bullseye64",
     },
     {
       :id => "ubuntu-focal",
-      :box => "bento/ubuntu-20.04",
+      :box => "generic/ubuntu2004",
     },
     {
       :id => "ubuntu-jammy",
-      :box => "bento/ubuntu-22.04",
+      :box => "generic/ubuntu2204",
     },
     {
       :id => "centos-7",
-      :box => "bento/centos-7",
+      :box => "centos/7",
     },
     {
       :id => "rockylinux-8",
-      :box => "bento/rockylinux-8",
+      :box => "rockylinux/8",
     },
     {
       :id => "almalinux-9",
-      :box => "bento/almalinux-9",
+      :box => "almalinux/9",
     },
     {
       :id => "amazonlinux-2",
@@ -47,6 +47,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         virtual_box.cpus = n_cpus if n_cpus
         virtual_box.memory = memory if memory
       end
+      node.vm.provider("libvirt") do |libvirt|
+        libvirt.cpus = n_cpus if n_cpus
+        libvirt.memory = memory if memory
+      end
     end
+    config.vm.synced_folder "./", "/vagrant", type: "rsync"
   end
 end
