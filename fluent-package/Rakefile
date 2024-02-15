@@ -83,6 +83,10 @@ def macos?
   /darwin/ =~ RUBY_PLATFORM
 end
 
+def linux?
+  /linux/ =~ RUBY_PLATFORM
+end
+
 def ensure_directory(dirname)
   mkdir_p(dirname) unless File.exist?(dirname)
   if block_given?
@@ -421,6 +425,13 @@ class BuildTask
         # for fat gems which depend on nonexistent libraries
         # mainly for nokogiri 1.11 or later on CentOS 6
         rebuild_gems
+
+        # Patch against generated file
+        if linux?
+          sh('sed', '--in-place',
+             '--expression', '/^if Gem.respond_to?/i load "/opt/fluent/share/conflict_detector.rb"',
+             File.join(staging_bindir, "fluentd"))
+        end
       end
 
       desc "Install fluentd"
@@ -1108,11 +1119,13 @@ class BuildTask
     configs.concat([
                      "etc/logrotate.d/#{SERVICE_NAME}",
                      fluentd_conf_default,
-                   ]) unless windows? || macos?
+                     "opt/#{PACKAGE_DIR}/share/conflict_detector.rb"]) unless windows? || macos?
     configs.each do |config|
       src =
         if config == fluentd_conf_default
           template_path(fluentd_conf)
+        elsif config == "opt/#{PACKAGE_DIR}/share/conflict_detector.rb"
+          template_path("conflict_detector.rb")
         else
           template_path(config)
         end

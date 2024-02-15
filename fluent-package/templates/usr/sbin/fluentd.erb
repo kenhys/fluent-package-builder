@@ -12,4 +12,5 @@ if ARGV.include?("--version")
   puts "fluent-package #{PACKAGE_VERSION} fluentd #{Fluent::VERSION} (#{FLUENTD_REVISION})"
   exit 0
 end
+
 load "<%= install_path %>/bin/fluentd"
