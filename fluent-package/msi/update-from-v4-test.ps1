@@ -50,3 +50,19 @@ $output_files_after_sleep = Get-ChildItem "C:\\opt\\td-agent\\output"
 If ($output_files_after_sleep.Count -le $output_files.Count) {
     [Environment]::Exit(1)
 }
+
+# Test: Abort if same fluentd.conf is specified and conflict with fluentdopt (PATH is case-insensitive.)
+$proc = Start-Process "C:\\opt\\fluent\\fluentd.bat" -ArgumentList "-c", "C:\\opt\\fluent\\etc\\fluent\\fluentd.conf" -Wait -NoNewWindow -PassThru
+if ($proc.ExitCode -ne 2) {
+    Write-Host "Failed to abort when it is conflict with running fluentdwinsvc"
+    [Environment]::Exit(1)
+}
+Write-Host "Succeeded to abort if trying to launch duplicated Fluentd instance"
+
+# Test: Abort if FLUENT_CONF is conflict with fluentdopt
+$proc = Start-Process "C:\\opt\\fluent\\fluentd.bat" -Wait -NoNewWindow -PassThru
+if ($proc.ExitCode -ne 2) {
+    Write-Host "Failed to abort without arguments when it is conflict with running fluentdwinsvc"
+    [Environment]::Exit(1)
+}
+Write-Host "Succeeded to abort if trying to launch duplicated Fluentd instance without arguments"
