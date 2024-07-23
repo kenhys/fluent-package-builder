@@ -96,8 +96,7 @@ gem "fluent-plugin-windows-eventlog", "0.8.3", platforms: windows_platforms
 gem "fluent-plugin-windows-exporter", "1.0.0", platforms: windows_platforms
 
 not_windows_platforms = [:ruby]
-# Use 0.16.0 because rdkafka 0.16.1 or later causes FTBFS
-gem "rdkafka", "0.16.0", platforms: not_windows_platforms
+gem "rdkafka", "0.16.1", platforms: not_windows_platforms
 gem "systemd-journal", "1.4.2", platforms: not_windows_platforms
 gem "fluent-plugin-systemd", "1.0.5", platforms: not_windows_platforms
 gem "fluent-plugin-utmpx", "0.5.0", platforms: not_windows_platforms
