@@ -45,7 +45,7 @@ jobs:
           sudo gem uninstall fileutils
       - name: Build rpm with Docker
         run: |
-          CI=${{ env.CI }} rake yum:build YUM_TARGETS=${{ matrix.rake-job }}
+          CI=${{ CI }} rake yum:build YUM_TARGETS=${{ matrix.rake-job }}
       - name: Upload fluent-package rpm
         uses: actions/upload-artifact@v4
         with:
