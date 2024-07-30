@@ -206,7 +206,7 @@ GEM
     net-http (0.4.1)
       uri
     nio4r (2.7.3)
-    nokogiri (1.16.7)
+    nokogiri (1.16.6)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
     oj (3.16.4)
@@ -330,7 +330,7 @@ DEPENDENCIES
   jmespath (= 1.6.2)
   mini_portile2 (= 2.8.7)
   msgpack (= 1.7.2)
-  nokogiri (= 1.16.7)
+  nokogiri (= 1.16.6)
   oj (= 3.16.4)
   opensearch-ruby (= 3.4.0)
   prometheus-client (= 2.1.0)
