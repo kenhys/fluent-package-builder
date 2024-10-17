@@ -145,37 +145,43 @@ migration_from_v4_post_process() {
     fi
 }
 
-local_plugin_migration=/tmp/<%= package_dir %>/.local_plugin_migration
-local_base_plugins=/tmp/<%= package_dir %>/.local_base_plugins
-local_missing_plugins=/tmp/<%= package_dir %>/.local_missing_plugins
+local_base_gems=/tmp/<%= package_dir %>/.local_base_gems
+local_current_gems=/tmp/<%= package_dir %>/.local_current_gems
+local_missing_gems=/tmp/<%= package_dir %>/.local_missing_gems
 install_missing_plugins() {
-    if [ -f $local_plugin_migration ]; then
-        echo "Checking network connectivity..."
-	if ! curl --fail --silent -O https://rubygems.org/specs.4.8.gz; then
-	    echo "Can't install missing plugins automatically, please install the following plugins manually."
-	    cat $local_plugin_migration
-	else
-	    echo "Install missing plugins automatically..."
-	    /usr/sbin/fluent-gem list | grep fluent-plugin | cut -d' ' -f1 > $local_base_plugins
-	    # NOTE: Do not install already bundled plugins
-	    diff -u $local_base_plugins $local_plugin_migration | grep '^+fluent' | sed -e 's/\+//' > $local_missing_plugins
-	    if [ -s $local_missing_plugins ]; then
-		cat $local_missing_plugins | xargs sudo /usr/sbin/fluent-gem install --no-document
-	    else
-		echo "No need to install missing plugins..."
+    # Install missing gems (even though systemd is not available, it works)
+    mkdir -p /tmp/<%= package_dir %>
+    /usr/sbin/fluent-gem list | cut -d' ' -f1 > $local_current_gems
+    if ! curl --fail --silent -O https://rubygems.org/specs.4.8.gz; then
+	echo "No network connectivity..."
+    else
+	if [ -f $local_base_gems ]; then
+	    # mark '-' as missing gems
+	    # NOTE: possibility to install gems which is deprecated or not needed anymore.
+	    diff -u $local_base_gems $local_current_gems | sed -e '1,2d' | grep '^-' | sed -e 's/^-//g' > $local_missing_gems
+	    if [ -s $local_missing_gems ]; then
+		echo "Try to install the following gems:"
+		cat $local_missing_gems
+		while read gem
+		do
+		    if ! /usr/sbin/fluent-gem install --no-document $gem; then
+			echo "Can't install missing gem automatically: please install $gem manually."
+		    fi
+		done < $local_missing_gems
 	    fi
-	    rm -f $local_base_plugins
-	    rm -f $local_missing_plugins
+	else
+	    echo "No need to install missing gems..."
 	fi
-	rm -f $local_plugin_migration
+	rm -f $local_base_gems
     fi
+    rm -f $local_current_gems
 }
 
 fluentd_auto_restart() {
     if [ -d /run/systemd/system ]; then
 	pid=$(systemctl show <%= service_name %> --property=MainPID --value)
 	if [ $pid -ne 0 ]; then
-	    env_vars=$(sudo sed -e 's/\x0/\n/g' /proc/$pid/environ)
+	    env_vars=$(sed -e 's/\x0/\n/g' /proc/$pid/environ)
 	    action=$(eval $env_vars && echo $FLUENT_PACKAGE_SERVICE_RESTART)
 	    case "$action" in
 		auto)
