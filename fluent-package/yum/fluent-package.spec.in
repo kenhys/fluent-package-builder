@@ -435,6 +435,7 @@ fi
 %config(noreplace) %{_sysconfdir}/sysconfig/@SERVICE_NAME@
 %config(noreplace) %{_sysconfdir}/@PACKAGE_DIR@/@SERVICE_NAME@.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/@SERVICE_NAME@
+%config(noreplace) %{_sysconfdir}/needrestart/conf.d/50-@PACKAGE@.conf
 %attr(0755,fluentd,fluentd) %dir %{_localstatedir}/log/@PACKAGE_DIR@
 %attr(0755,fluentd,fluentd) %dir %{_localstatedir}/log/@PACKAGE_DIR@/buffer
 %attr(0755,fluentd,fluentd) %dir %{_sysconfdir}/@PACKAGE_DIR@

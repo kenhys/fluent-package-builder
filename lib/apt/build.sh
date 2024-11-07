@@ -66,17 +66,6 @@ elif [ -d "${PACKAGEDIR}/debian" ]; then
   run cp -rp "${PACKAGEDIR}/debian" debian
 fi
 
-# change to install fix for needrestart
-case "${code_name}" in
-  jammy|noble)
-    echo "Suppress needrestart on ${code_name}"
-    echo 'etc/needrestart/conf.d/*' >> debian/fluent-package.install
-    ;;
-  *)
-    echo "No need to suppress needrestart on ${code_name}"
-    ;;
-esac
-
 # setup lintian profile
 run mkdir -p ~/.lintian/profiles/${PACKAGE}/
 run cp "debian/lintian/${PACKAGE}/${distribution}.profile" ~/.lintian/profiles/${PACKAGE}/${distribution}.profile
