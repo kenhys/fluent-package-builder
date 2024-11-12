@@ -1,5 +1,14 @@
 #!/bin/bash
 
+function debug_service_files() {
+    echo $1
+    set +e
+    ls -la /usr/lib/systemd/system/ |grep -E 'td-agent|fluent-package'
+    ls -la /etc/systemd/system
+    ls -la /usr/lib/systemd/system/multi-user.target.wants/
+    set -e
+}
+
 set -exu
 
 . $(dirname $0)/../commonvar.sh
@@ -26,8 +35,12 @@ sudo systemctl unmask td-agent
 # Even though removing fluent-package, log and .conf are kept. dpkg reports "rc fluent-package" and "rc td-agent" status.
 sudo apt remove -y fluent-package td-agent
 
+debug_service_files "DEBUG: after remove fluent-package td-agent"
+
 # fluentd.service is already masked (link to /dev/null), then remove it.
 sudo systemctl unmask fluentd
+
+debug_service_files "DEBUG: after unmask fluentd"
 
 # Drop symbolic links and recreate real directory.
 sudo rm -f /var/log/td-agent
@@ -44,6 +57,8 @@ sudo mkdir -p /etc/td-agent
 sudo chown td-agent:td-agent /etc/td-agent
 sudo mv /etc/fluent/td-agent.conf /etc/td-agent/
 curl -fsSL https://toolbelt.treasuredata.com/sh/install-${distribution}-${code_name}-td-agent4.sh | sh
+
+debug_service_files "DEBUG: after downgrade"
 
 # Test: service status
 (! systemctl status --no-pager fluentd)
