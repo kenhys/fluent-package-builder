@@ -29,8 +29,9 @@ sudo apt install -V -y \
     /host/${distribution}/pool/${code_name}/${channel}/*/*/fluent-package_*_${architecture}.deb \
     /host/${distribution}/pool/${code_name}/${channel}/*/*/td-agent_*_all.deb
 
-# td-agent.service is already masked (link to /dev/null), and remove td-agent.service alias not to conflict with v4
-sudo systemctl unmask td-agent
+sudo systemctl is-active fluentd
+sudo systemctl is-active td-agent
+sudo systemctl stop fluentd
 
 # Even though removing fluent-package, log and .conf are kept. dpkg reports "rc fluent-package" and "rc td-agent" status.
 sudo apt remove -y fluent-package td-agent
@@ -39,6 +40,8 @@ debug_service_files "DEBUG: after remove fluent-package td-agent"
 
 # fluentd.service is already masked (link to /dev/null), then remove it.
 sudo systemctl unmask fluentd
+# purge inacive (dead) symbolic links
+sudo systemctl disable td-agent
 
 debug_service_files "DEBUG: after unmask fluentd"
 
@@ -59,6 +62,9 @@ sudo mv /etc/fluent/td-agent.conf /etc/td-agent/
 curl -fsSL https://toolbelt.treasuredata.com/sh/install-${distribution}-${code_name}-td-agent4.sh | sh
 
 debug_service_files "DEBUG: after downgrade"
+
+# re-create symlink to point service file again
+sudo systemctl enable td-agent --now
 
 # Test: service status
 (! systemctl status --no-pager fluentd)
