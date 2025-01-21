@@ -1,6 +1,7 @@
 name: Yum based Linux (AArch64)
 on:
   workflow_dispatch:
+  pull_request:
 concurrency:
   group: ${{ github.head_ref || github.sha }}-${{ github.workflow }}
   cancel-in-progress: true
@@ -29,7 +30,7 @@ jobs:
           #- label: Amazon Linux 2023 aarch64
           #  rake-job: amazonlinux-2023
           #  test-docker-image: amazonlinux:2023
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@master
       - name: Install dependencies
