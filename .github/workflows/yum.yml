@@ -130,7 +130,7 @@ jobs:
   v1test:
     name: Test ${{ matrix.label }} ${{ matrix.test }} (CGroup V1)
     needs: build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -164,10 +164,8 @@ jobs:
         include:
           - label: AmazonLinux 2 x86_64
             rake-job: amazonlinux-2
-            container-image: images:amazonlinux/2
           - label: AmazonLinux 2023 x86_64
             rake-job: amazonlinux-2023
-            container-image: images:amazonlinux/2023
         exclude:
           - label: AmazonLinux 2023 x86_64
             test: update-from-v4.sh
@@ -184,31 +182,15 @@ jobs:
         with:
           name: v6-packages-${{ matrix.rake-job }}
           path: v6-test
-      - name: Install Incus
+      - name: Spin up vagrant
         run: |
-          sudo curl -fsSL https://pkgs.zabbly.com/key.asc -o /etc/apt/keyrings/zabbly.asc
-          cat <<SOURCES | sudo tee /etc/apt/sources.list.d/zabbly-incus-stable.sources
-          Enabled: yes
-          Types: deb
-          URIs: https://pkgs.zabbly.com/incus/stable
-          Suites: $(. /etc/os-release && echo ${VERSION_CODENAME})
-          Components: main
-          Architectures: $(dpkg --print-architecture)
-          Signed-By: /etc/apt/keyrings/zabbly.asc
-          SOURCES
-
-          sudo apt-get update
-          sudo apt-get install -y -V incus
-      - name: Allow egress network traffic flows for Incus
-        # https://linuxcontainers.org/incus/docs/main/howto/network_bridge_firewalld/#prevent-connectivity-issues-with-incus-and-docker
+          sudo apt-get install -y vagrant virtualbox
+          vagrant --version
+          vagrant status
+          vagrant up --provider=virtualbox ${{ matrix.rake-job }}
+      - name: Run Test ${{ matrix.test }} on ${{ matrix.rake-job }}
         run: |
-          sudo iptables -I DOCKER-USER -i incusbr0 -j ACCEPT
-          sudo iptables -I DOCKER-USER -o incusbr0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-      - name: Setup Incus
-        run: |
-          sudo incus admin init --auto
-      - name: Run Test ${{ matrix.test }} on ${{ matrix.container-image }}
-        run: fluent-package/yum/systemd-test/test.sh ${{ matrix.container-image }} ${{ matrix.test }}
+          vagrant ssh ${{ matrix.rake-job }} -- fluent-package/yum/systemd-test/${{ matrix.test }}
 
   v2test:
     name: Test ${{ matrix.label }} ${{ matrix.test }} (CGroup V2)
