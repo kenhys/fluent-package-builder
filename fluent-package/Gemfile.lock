@@ -4,7 +4,7 @@ GIT
   branch: fluent-package
   specs:
     win32-service (2.3.2)
-      ffi (>= 1.15.5, <= 1.17.0)
+      ffi
       ffi-win32-extensions
 
 GIT
@@ -121,7 +121,7 @@ GEM
       faraday (>= 2.0, < 3)
     ffi (1.17.0)
     ffi-win32-extensions (1.1.0)
-      ffi
+      ffi (>= 1.15.5, <= 1.17.0)
     fiber-annotation (0.2.0)
     fiber-local (1.1.0)
       fiber-storage
