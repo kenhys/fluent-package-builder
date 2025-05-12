@@ -34,5 +34,4 @@ jobs:
           git add fluent-package/Gemfile.lock
           git commit --message "Update Gemfile.lock" --signoff
           git push origin $branch
-          $base_branch=echo $GITHUB_REF | %{$_ -Replace "refs/heads/", ""}
-          gh pr create --base $base_branch --title "Update Gemfile.lock" --body "Update Gemfile.lock by maintenance workflow"
+          gh pr create --base $GITHUB_REF_NAME --title "Update Gemfile.lock" --body "Update Gemfile.lock by maintenance workflow"
