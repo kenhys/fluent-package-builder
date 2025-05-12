@@ -21,6 +21,7 @@ jobs:
       - name: Bundle Update
         run: |
           echo ${{ github.ref }}
+          echo $Env:GITHUB_REF_NAME
           cd fluent-package
           gem install bundler:2.3.27
           bundle _2.3.27_ update -j 4
