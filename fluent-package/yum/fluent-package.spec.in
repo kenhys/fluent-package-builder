@@ -50,6 +50,11 @@
 %define disable_service() (systemctl %1 %2)
 %define enable_service() (systemctl %1 %2)
 
+# Disable package-note-file which embeds build environment path
+# as LDFLAGS. it breaks build process with third-party gems which
+# requires compile procedure.
+%undefine _package_note_file
+
 Name:		@PACKAGE@
 Version:	@VERSION@
 Release:	@RELEASE@%{?dist}
