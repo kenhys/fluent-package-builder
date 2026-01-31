@@ -19,6 +19,11 @@
       "label": "Ubuntu Noble amd64",
       "rake-job": "ubuntu-noble",
       "test-docker-image": "ubuntu:noble"
+    },
+    {
+      "label": "Ubuntu Resolute amd64",
+      "rake-job": "ubuntu-resolute",
+      "test-docker-image": "ubuntu:resolute"
     }
   ]
 }
