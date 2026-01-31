@@ -89,7 +89,8 @@ class FluentdAptLtsSourcePackageTask < PackageTask
       "debian-bookworm",
       "debian-trixie",
       "ubuntu-jammy",
-      "ubuntu-noble"
+      "ubuntu-noble",
+      "ubuntu-resolute"
     ]
   end
 
